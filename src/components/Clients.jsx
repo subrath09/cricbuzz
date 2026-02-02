@@ -3,7 +3,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa6";
 
 import ClientsCard from "./ClientsCard";
-import ClientB from "../assets/ClientB.png"
+import ClientA from "../assets/ClientA.png"
 import testimonalData from "../data/clients";
 
 import "swiper/css";
@@ -53,7 +53,7 @@ function Clients() {
               description={testimonal.description}
               name={testimonal.name}
               profession={testimonal.profession}
-              img={ClientB}
+              img={ClientA}
             />
           </SwiperSlide>
         ))}
