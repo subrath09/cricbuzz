@@ -60,11 +60,11 @@ function App() {
     <div>
             
 
-          <Routes>
-        
-        <Route path="/" element={<AdminCric />} />
-        <Route path="/admin" element={<CricBuzz />} />
-      </Routes>
+        <Routes>
+  <Route path="/" element={<AdminCric />} />
+  <Route path="/cricbuzz" element={<CricBuzz />} />
+</Routes>
+ 
         
       
 

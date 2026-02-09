@@ -11,6 +11,7 @@ import {
 import { BiSolidCricketBall } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
 import app from "../firebase";
+import { searchClient, writeClient } from "../algolia.js/algolia";
 
 const db = getFirestore(app);
 
@@ -67,7 +68,7 @@ function AdminCric() {
                 team2: { name: "", runs: "", wickets: "", overs: "" },
                 docId: null,
               },
-            ]
+            ],
       );
 
       setPageLoading(false);
@@ -100,19 +101,29 @@ function AdminCric() {
     ]);
   };
 
-  const handleDelete = async (index) => {
+const handleDelete = async (index) => {
+  try {
     setDeleteLoading(index);
 
     const match = matches[index];
-    if (match.docId) {
+    if (match.docId)
       await deleteDoc(doc(db, "cricbuzz", match.docId));
-    }
 
-    setMatches(matches.filter((_, i) => i !== index));
+    const matchIndex = writeClient.initIndex("matches");
+    await matchIndex.deleteObject(match.docId);
+
+    setMatches((prev) => prev.filter((_, i) => i !== index));
+
     setDeleteLoading(null);
-  };
+  } catch (error) {
+    console.log(error);
+    alert(error.message);
+    setDeleteLoading(null);
+  }
+};
 
-  const addOrUpdateScore = async (index) => {
+const addOrUpdateScore = async (index) => {
+  try {
     const match = matches[index];
 
     if (
@@ -131,12 +142,23 @@ function AdminCric() {
 
     setBtnLoading(index);
 
+    const matchIndex = writeClient.initIndex("matches");
+
+    const data = {
+      matchBetween: match.matchBetween,
+      team1: match.team1,
+      team2: match.team2,
+      updatedAt: new Date(),
+    };
+
     if (!match.docId) {
-      const docRef = await addDoc(collection(db, "cricbuzz"), {
-        matchBetween: match.matchBetween,
-        team1: match.team1,
-        team2: match.team2,
-        createdAt: new Date(),
+      data.createdAt = new Date();
+
+      const docRef = await addDoc(collection(db, "cricbuzz"), data);
+
+      await matchIndex.saveObject({
+        objectID: docRef.id,
+        ...data,
       });
 
       const updated = [...matches];
@@ -145,35 +167,40 @@ function AdminCric() {
 
       alert("Match Added Successfully");
     } else {
-      await updateDoc(doc(db, "cricbuzz", match.docId), {
-        matchBetween: match.matchBetween,
-        team1: match.team1,
-        team2: match.team2,
-        updatedAt: new Date(),
+      await updateDoc(doc(db, "cricbuzz", match.docId), data);
+
+      await matchIndex.saveObject({
+        objectID: match.docId,
+        ...data,
       });
 
       alert("Match Updated Successfully");
     }
 
     setBtnLoading(null);
-  };
+  } catch (error) {
+    alert(error + "");
+    console.log(error);
+    setBtnLoading(null);
+  }
+};
+
 
   return (
     <div className="bg-gray-200 min-h-screen pt-8 max-lg:pt-0">
       <div className="mx-8  pb-8 max-lg:mx-0 ">
-
         {/* HEADER */}
         <div className="bg-[#00916f]  text-white py-4 px-6 grid grid-cols-3 items-center shadow max-lg:px-0 max-lg:text-center">
           <div></div>
 
           <div className="flex justify-center items-center gap-2 text-4xl font-bold max-lg:text-3xl">
-            cricBuzz Admin  
+            cricBuzz Admin
             <BiSolidCricketBall className="animate-bounce shadow-xl rounded-full max-lg:hidden" />
           </div>
 
           <div className="flex justify-end">
             <button
-              onClick={() => navigate("/admin")}
+              onClick={() => navigate("/cricbuzz")}
               className="text-sm border-2 shadow-xl rounded-full font-bold px-4 py-2 hover:bg-green-700 max-lg:px-2 max-lg:py-1 "
             >
               Go To App ?
